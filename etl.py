@@ -51,6 +51,11 @@ mortality.rename(columns={"Mortality Rate, 1980*": "1980",
         "Mortality Rate, 2014*": "2014",
         "% Change in Mortality Rate, 1980-2014": "%_Change_1980-2014"},inplace=True)
 
+#melt year columns into rows
+mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', '%_Change_1980-2014'], 
+        var_name="Date", 
+        value_name="Value")
+
 #dict to hold our dataframes
 df_dict = {}
 
@@ -68,6 +73,9 @@ df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
 #split out us dataframe
 df_dict['mortality_us'] = mortality[mortality['FIPS'].isnull()].copy().reset_index(drop=True)
 df_dict['mortality_us'].drop(columns='FIPS',inplace=True)
+
+
+
 
 #add any other transforms here
 
