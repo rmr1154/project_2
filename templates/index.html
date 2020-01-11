@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>US Mortality Rates</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/style.css') }}">
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="jumbotron text-center">
+      <h1>Analysis of US Mortality Rates and Causes</h1>
+      <p><a class="btn btn-primary btn-lg" href="/scrape" role="button">Process ETL</a></p>
+    </div>
+
+    <!-- Get to scraping -->
+    <div class="row" id="latest_news">
+      <div class="col-md-12">
+        <h2>Latest Mars News</h2>
+        <h4 class="heading">{{news_title}}</h4>
+        {{news_p}}
+      </div>
+    </div>
+    <div class="row main" id="main">
+      <div class="col-md-7">
+        <h2>Featured Mars Image</h2>
+        <img src={{featured_image_url}} alt="Featured Mars Image" class="disp-image" />
+      </div>
+      <div class="col-md-5">
+        <div class="weather">
+          <h4>Current Weather on Mars</h4>
+          <p>{{mars_weather}}</p>
+        </div>
+        <div class="facts">
+          <h4>Mars Facts</h4>
+          {{mars_facts|safe}}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row hemi-container">
+      <div class="col-md-12">
+        <h4>Mars Hemispheres</h4>
+        <hr>
+      </div>
+      <div class="row hemi">
+        <hr>
+        {%for i in hemi_list%}
+        <div class="col-3 col-md-6">
+          <img src={{i.img_url}} alt={{i.img_url}}
+            class="disp-image" />
+            <h5>{{i.title}}</h5>
+        </div>
+        {%endfor%}
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
