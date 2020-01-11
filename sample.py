@@ -40,10 +40,10 @@ def welcome():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
-        f"/api/v1.0/categories<br/>"
-        f"/api/v1.0/passengers"
+        f'<a href="/api/v1.0/categories">/api/v1.0/categories</a></br>'
+        f'<a href="/api/v1.0/county_all">/api/v1.0/county_all</a></br>'  
+        f'<a href="/api/v1.0/county_year/<year>">/api/v1.0/county_year/&ltyear&gt</a></br>'
     )
-
 
 @app.route("/api/v1.0/categories")
 def categories():
@@ -62,8 +62,8 @@ def categories():
     return jsonify(all_categories)
 
 
-@app.route("/api/v1.0/county")
-def county():
+@app.route("/api/v1.0/county_all")
+def county_all():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
@@ -85,6 +85,31 @@ def county():
 
     return jsonify(all_data)
 
+@app.route("/api/v1.0/county_year/<year>")
+def county_year(year):
+        # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Return a list of passenger data including the name, age, and sex of each passenger"""
+    # Query all passengers
+    results = session.query(mortality_county.FIPS, mortality_county.Category, mortality_county.Date, mortality_county.Value).\
+        filter(mortality_county.Date == year).all()
+
+    session.close()
+
+    # Create a dictionary from the row data and append to a list of all_passengers
+    all_data = []
+    for FIPS, Category, Date, Value in results:
+        mortality_dict = {}
+        mortality_dict["FIPS"] = FIPS
+        mortality_dict["Category"] = Category
+        mortality_dict["Date"] = Date
+        mortality_dict["Value"] = Value
+        all_data.append(mortality_dict)
+
+    return jsonify(all_data)
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
