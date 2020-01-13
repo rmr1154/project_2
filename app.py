@@ -45,11 +45,13 @@ def index():
 @app.route("/etl")
 @app.route("/etl/")
 def etl():
-    try:
-        process_etl()
-    except:
-        pass
-    return redirect("/", code=302)
+    #return process_etl()
+     try:
+         process_etl()
+         return redirect("/", code=302)
+     except:
+         return 'Something went horribly wrong!'
+    
 
 
 @app.route("/api/")

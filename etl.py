@@ -26,7 +26,7 @@ class Mortality_County(Base):
     __tablename__ = 'mortality_county'
     
     index = Column(Integer, primary_key = True)
-    FIPS = Column(Integer)
+    FIPS = Column(String)
     Category = Column(String)
     Change_1980_2014 = Column(Float)
     Date = Column(String)
@@ -38,12 +38,11 @@ class Mortality_State(Base):
     __tablename__ = 'mortality_state'
     
     index = Column(Integer, primary_key = True)
-    FIPS = Column(Integer)
+    FIPS = Column(String)
     Category = Column(String)
     Change_1980_2014 = Column(Float)
     Date = Column(String)
     Value = Column(Float)
-    County = Column(String)
     State = Column(String)
     
 class Mortality_US(Base):
@@ -58,7 +57,9 @@ class Mortality_US(Base):
     
 
 engine = create_engine(f'sqlite:///{db_string}', echo=True)
-Base.metadata.create_all(engine)
+
+def create_all_tables():
+    Base.metadata.create_all(engine)
 
 
 #metadata.reflect()
@@ -67,13 +68,21 @@ def truncate_all_tables():
     metadata.reflect()
     metadata.delete_all()
 
+#metadata.reflect()
+def drop_all_tables():
+    metadata = MetaData(engine)
+    metadata.reflect()
+    metadata.drop_all()    
+
 #function to load the database from the dict of df's 
 def load_db(class_dict,df_dict,db_string):
     table_list = [table for table in df_dict.keys()]
     Session = sessionmaker(bind=engine)
     session = Session()
+    drop_all_tables()
+    create_all_tables()
     for table in table_list:
-        session.execute(f'DELETE FROM {table}')
+        #session.execute(f'DELETE FROM {table}')
         mapper = class_dict.get(table)
         session.bulk_insert_mappings(mapper, df_dict[table].to_dict(orient="records"))
     session.commit()
@@ -112,12 +121,13 @@ def process_etl():
     df_dict['mortality_county'] = mortality.query('FIPS > 1000').copy().reset_index(drop=True)
     df_dict['mortality_county'][['County','State']] = df_dict['mortality_county']['Location'].str.rsplit(',',expand=True)
     df_dict['mortality_county']['FIPS'] = df_dict['mortality_county']['FIPS'].astype('int')
+    df_dict['mortality_county']['FIPS'] = df_dict['mortality_county']['FIPS'].apply(lambda x: '{0:0>5}'.format(x)).astype('str')
     df_dict['mortality_county'].drop(columns='Location',inplace=True)
-    #df_dict['mortality_county']['class'] = Mortality_County
 
     #Split out state dataframe
     df_dict['mortality_state'] = mortality.query('FIPS < 1000').copy().reset_index(drop=True)
     df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].astype('int')
+    df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].apply(lambda x: '{0:0>2}'.format(x)).astype('str')
     df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
 
     #split out us dataframe
