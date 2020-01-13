@@ -113,6 +113,31 @@ def process_etl():
     mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', 'Change_1980_2014'], 
             var_name="Date", 
             value_name="Value")
+    
+    #replace vals to shorten categories
+    new_vals = {"Neonatal disorders":"Neonatal disorders",
+                "HIV/AIDS and tuberculosis":"HIV/AIDS and TB",
+                "Musculoskeletal disorders":"Musculoskeletal disorders",
+                "Diabetes, urogenital, blood, and endocrine diseases":"Diabetes",
+                "Digestive diseases":"Digestive diseases",
+                "Chronic respiratory diseases":"Chronic resp",
+                "Neurological disorders":"Neurological disorders",
+                "Cirrhosis and other chronic liver diseases":"Chronic liver",
+                "Mental and substance use disorders":"Mental disorders",
+                "Forces of nature, war, and legal intervention":"Non Natural",
+                "Unintentional injuries":"Unintentional injuries",
+                "Nutritional deficiencies":"Nutritional deficiencies",
+                "Other communicable, maternal, neonatal, and nutritional diseases":"Other communicable",
+                "Cardiovascular diseases":"Cardiovascular",
+                "Diarrhea, lower respiratory, and other common infectious diseases":"Diarrhea",
+                "Maternal disorders":"Maternal disorders",
+                "Other non-communicable diseases":"Other non-communicable diseases",
+                "Self-harm and interpersonal violence":"Violence",
+                "Neoplasms":"Neoplasms",
+                "Transport injuries":"Transport injuries",
+                "Neglected tropical diseases and malaria":"Tropical diseases"}
+    
+    mortality = mortality.replace(new_vals)
 
     #dict to hold our dataframes
     df_dict = {}
@@ -145,4 +170,7 @@ def process_etl():
     #load sqlite db from df_dict
     load_db(class_dict,df_dict,db_string)
     return 'ETL Processing Completed'
+
+
+
 
