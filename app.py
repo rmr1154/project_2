@@ -90,8 +90,6 @@ def years():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all Category names"""
-    # Query all passengers
     results = session.query(mortality_us.Date).distinct().all()
 
     session.close()
@@ -107,8 +105,6 @@ def county_all():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
     results = session.query(mortality_county.FIPS, mortality_county.Category, mortality_county.Date, mortality_county.Value).all()
 
     session.close()
@@ -131,8 +127,6 @@ def county_year(year):
         # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
     results = session.query(mortality_county.FIPS, mortality_county.Category, mortality_county.Date, mortality_county.Value).\
         filter(mortality_county.Date == year).all()
 
@@ -156,8 +150,6 @@ def state_year(year):
         # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
     results = session.query(mortality_state.FIPS, mortality_state.Category, mortality_state.Date, mortality_state.Value).\
         filter(mortality_state.Date == year).all()
 
@@ -181,8 +173,6 @@ def us_year(year):
         # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
     results = session.query(mortality_us.Category, mortality_us.Date, mortality_us.Value).\
         filter(mortality_us.Date == year).all()
 
@@ -225,7 +215,7 @@ def create_plot(feature):
 
 
     graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
-    print(graphJSON)
+    #print(graphJSON)
     return graphJSON
 
 @app.route('/bar', methods=['GET', 'POST'])
