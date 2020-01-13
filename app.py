@@ -3,7 +3,8 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, redirect
+from etl import * 
 
 
 #################################################
@@ -32,9 +33,24 @@ app = Flask(__name__)
 #################################################
 # Flask Routes
 #################################################
-
 @app.route("/")
-def welcome():
+def index():
+    return render_template('index.html')
+
+
+@app.route("/etl")
+@app.route("/etl/")
+def etl():
+    try:
+        process_etl()
+    except:
+        pass
+    return redirect("/", code=302)
+
+
+@app.route("/api/")
+@app.route("/api")
+def api():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
@@ -44,8 +60,10 @@ def welcome():
         f'<a href="/api/v1.0/county_year/2000">/api/v1.0/county_year/&ltyear&gt</a></br>'
         f'<a href="/api/v1.0/state_year/2000">/api/v1.0/state_year/&ltyear&gt</a></br>'
         f'<a href="/api/v1.0/us_year/2000">/api/v1.0/us_year/&ltyear&gt</a></br>'
+
     )
 
+@app.route("/api/v1.0/categories/")
 @app.route("/api/v1.0/categories")
 def categories():
     # Create our session (link) from Python to the DB
@@ -62,6 +80,7 @@ def categories():
 
     return jsonify(all_categories)
 
+@app.route("/api/v1.0/years/")
 @app.route("/api/v1.0/years")
 def years():
     # Create our session (link) from Python to the DB
@@ -78,7 +97,7 @@ def years():
 
     return jsonify(all_categories)
 
-
+@app.route("/api/v1.0/county_all/")
 @app.route("/api/v1.0/county_all")
 def county_all():
     # Create our session (link) from Python to the DB
@@ -102,6 +121,7 @@ def county_all():
 
     return jsonify(all_data)
 
+@app.route("/api/v1.0/county_year/<year>/")
 @app.route("/api/v1.0/county_year/<year>")
 def county_year(year):
         # Create our session (link) from Python to the DB
@@ -126,6 +146,7 @@ def county_year(year):
 
     return jsonify(all_data)
 
+@app.route("/api/v1.0/state_year/<year>/")
 @app.route("/api/v1.0/state_year/<year>")
 def state_year(year):
         # Create our session (link) from Python to the DB
@@ -149,7 +170,8 @@ def state_year(year):
         all_data.append(mortality_dict)
 
     return jsonify(all_data)
-    
+
+@app.route("/api/v1.0/us_year/<year>/")    
 @app.route("/api/v1.0/us_year/<year>")
 def us_year(year):
         # Create our session (link) from Python to the DB

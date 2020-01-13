@@ -20,7 +20,6 @@ dbname = 'mortality.db'
 dbpath = 'assets/data/'
 db_string = f'{dbpath}{dbname}'
 
-
 Base = declarative_base()
 
 class Mortality_County(Base):
@@ -57,82 +56,83 @@ class Mortality_US(Base):
     Location = Column(String)
     Value = Column(Float)
     
-engine = create_engine(f'sqlite:///{db_string}', echo=True)
 
+engine = create_engine(f'sqlite:///{db_string}', echo=True)
 Base.metadata.create_all(engine)
 
 
-#drop our tables for a clean start
 #metadata.reflect()
 def truncate_all_tables():
     metadata = MetaData(engine)
     metadata.reflect()
     metadata.delete_all()
- 
-def load_db(dict_in,db_string):
-    table_list = [table for table in dict_in.keys()]
+
+#function to load the database from the dict of df's 
+def load_db(class_dict,df_dict,db_string):
+    table_list = [table for table in df_dict.keys()]
     Session = sessionmaker(bind=engine)
     session = Session()
     for table in table_list:
         session.execute(f'DELETE FROM {table}')
         mapper = class_dict.get(table)
-        session.bulk_insert_mappings(mapper, dict_in[table].to_dict(orient="records"))
+        session.bulk_insert_mappings(mapper, df_dict[table].to_dict(orient="records"))
     session.commit()
     session.close()
 
 
-#import our csv into df
-mortality_src = "assets/data/mort.csv"
-mortality = pd.read_csv(mortality_src)
+def process_etl():
+    #import our csv into df
+    mortality_src = "assets/data/mort.csv"
+    mortality = pd.read_csv(mortality_src)
 
-#   ETL STEPS to clean the data for export to SQLite
-#remove the (min) and (max) for each year col
-mortality = mortality.filter([col for col in mortality if '(' not in col])
+    #   ETL STEPS to clean the data for export to SQLite
+    #remove the (min) and (max) for each year col
+    mortality = mortality.filter([col for col in mortality if '(' not in col])
 
-#clean col names
-mortality.rename(columns={"Mortality Rate, 1980*": "1980",
-        "Mortality Rate, 1985*": "1985",
-        "Mortality Rate, 1990*": "1990",
-        "Mortality Rate, 1995*": "1995",
-        "Mortality Rate, 2000*": "2000",
-        "Mortality Rate, 2005*": "2005",
-        "Mortality Rate, 2010*": "2010",
-        "Mortality Rate, 2014*": "2014",
-        "% Change in Mortality Rate, 1980-2014": "Change_1980_2014"},inplace=True)
+    #clean col names
+    mortality.rename(columns={"Mortality Rate, 1980*": "1980",
+            "Mortality Rate, 1985*": "1985",
+            "Mortality Rate, 1990*": "1990",
+            "Mortality Rate, 1995*": "1995",
+            "Mortality Rate, 2000*": "2000",
+            "Mortality Rate, 2005*": "2005",
+            "Mortality Rate, 2010*": "2010",
+            "Mortality Rate, 2014*": "2014",
+            "% Change in Mortality Rate, 1980-2014": "Change_1980_2014"},inplace=True)
 
-#melt year columns into rows
-mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', 'Change_1980_2014'], 
-        var_name="Date", 
-        value_name="Value")
+    #melt year columns into rows
+    mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', 'Change_1980_2014'], 
+            var_name="Date", 
+            value_name="Value")
 
-#dict to hold our dataframes
-df_dict = {}
+    #dict to hold our dataframes
+    df_dict = {}
 
-#split out County dataframe
-df_dict['mortality_county'] = mortality.query('FIPS > 1000').copy().reset_index(drop=True)
-df_dict['mortality_county'][['County','State']] = df_dict['mortality_county']['Location'].str.rsplit(',',expand=True)
-df_dict['mortality_county']['FIPS'] = df_dict['mortality_county']['FIPS'].astype('int')
-df_dict['mortality_county'].drop(columns='Location',inplace=True)
-#df_dict['mortality_county']['class'] = Mortality_County
+    #split out County dataframe
+    df_dict['mortality_county'] = mortality.query('FIPS > 1000').copy().reset_index(drop=True)
+    df_dict['mortality_county'][['County','State']] = df_dict['mortality_county']['Location'].str.rsplit(',',expand=True)
+    df_dict['mortality_county']['FIPS'] = df_dict['mortality_county']['FIPS'].astype('int')
+    df_dict['mortality_county'].drop(columns='Location',inplace=True)
+    #df_dict['mortality_county']['class'] = Mortality_County
 
-#Split out state dataframe
-df_dict['mortality_state'] = mortality.query('FIPS < 1000').copy().reset_index(drop=True)
-df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].astype('int')
-df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
+    #Split out state dataframe
+    df_dict['mortality_state'] = mortality.query('FIPS < 1000').copy().reset_index(drop=True)
+    df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].astype('int')
+    df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
 
-#split out us dataframe
-df_dict['mortality_us'] = mortality[mortality['FIPS'].isnull()].copy().reset_index(drop=True)
-df_dict['mortality_us'].drop(columns='FIPS',inplace=True)
+    #split out us dataframe
+    df_dict['mortality_us'] = mortality[mortality['FIPS'].isnull()].copy().reset_index(drop=True)
+    df_dict['mortality_us'].drop(columns='FIPS',inplace=True)
 
-#build a dict of classes so that we can class_dict.get(key) and call our mapper class when doing the bulk insert for each dataframe / class
-class_dict = {}
-class_dict['mortality_county'] = Mortality_County
-class_dict['mortality_state'] = Mortality_State
-class_dict['mortality_us'] = Mortality_US
+    #build a dict of classes so that we can class_dict.get(key) and call our mapper class when doing the bulk insert for each dataframe / class
+    class_dict = {}
+    class_dict['mortality_county'] = Mortality_County
+    class_dict['mortality_state'] = Mortality_State
+    class_dict['mortality_us'] = Mortality_US
 
+    #add any other transforms here
 
-#add any other transforms here
-
-#load sqlite db from df_dict
-load_db(df_dict,db_string)
+    #load sqlite db from df_dict
+    load_db(class_dict,df_dict,db_string)
+    return 'ETL Processing Completed'
 
