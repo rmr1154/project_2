@@ -6,31 +6,80 @@ import pandas as pd
 #from pandas_profiling import ProfileReport
 import sqlite3 as sq
 import json
+import re
+from sqlalchemy import create_engine
+from sqlalchemy import MetaData
+from sqlalchemy import Table
+from sqlalchemy import Column
+from sqlalchemy import Integer, String, Float
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-def load_db(dict_in,dbname):
+
+dbname = 'mortality.db'
+dbpath = 'assets/data/'
+db_string = f'{dbpath}{dbname}'
+
+
+Base = declarative_base()
+
+class Mortality_County(Base):
+    __tablename__ = 'mortality_county'
+    
+    index = Column(Integer, primary_key = True)
+    FIPS = Column(Integer)
+    Category = Column(String)
+    Change_1980_2014 = Column(Float)
+    Date = Column(String)
+    Value = Column(Float)
+    County = Column(String)
+    State = Column(String)
+
+class Mortality_State(Base):
+    __tablename__ = 'mortality_state'
+    
+    index = Column(Integer, primary_key = True)
+    FIPS = Column(Integer)
+    Category = Column(String)
+    Change_1980_2014 = Column(Float)
+    Date = Column(String)
+    Value = Column(Float)
+    County = Column(String)
+    State = Column(String)
+    
+class Mortality_US(Base):
+    __tablename__ = 'mortality_us'
+    
+    index = Column(Integer, primary_key = True)
+    Category = Column(String)
+    Change_1980_2014 = Column(Float)
+    Date = Column(String)
+    Location = Column(String)
+    Value = Column(Float)
+    
+engine = create_engine(f'sqlite:///{db_string}', echo=True)
+
+Base.metadata.create_all(engine)
+
+
+#drop our tables for a clean start
+#metadata.reflect()
+def truncate_all_tables():
+    metadata = MetaData(engine)
+    metadata.reflect()
+    metadata.delete_all()
+ 
+def load_db(dict_in,db_string):
     table_list = [table for table in dict_in.keys()]
-#export to sqlite
-    sql_data = f'assets/data/{dbname}.db'
-    
-    conn = sq.connect(sql_data)
-    cur = conn.cursor()
+    Session = sessionmaker(bind=engine)
+    session = Session()
     for table in table_list:
-        dropstring = '''drop table if exists "{0}"'''.format(table)
-        print(dropstring)
-        cur.execute(dropstring)
-        print(f'create and load table - {table}')
-        dict_in[table].to_sql(table,conn, if_exists='replace', index=True)
-    conn.commit()
-    conn.close() 
-    print('SQLite Load Complete')
-    
-#schema_dict = {'mortality':{c:c for i, c in enumerate(mortality.columns)}}
+        session.execute(f'DELETE FROM {table}')
+        mapper = class_dict.get(table)
+        session.bulk_insert_mappings(mapper, dict_in[table].to_dict(orient="records"))
+    session.commit()
+    session.close()
 
-def dict_to_json(dict_in,filename):
-    json_data = json.dumps(dict_in,indent=4,sort_keys=True)
-    f = open(filename+'.json','w')
-    f.write(json_data)
-    f.close()    
 
 #import our csv into df
 mortality_src = "assets/data/mort.csv"
@@ -49,10 +98,10 @@ mortality.rename(columns={"Mortality Rate, 1980*": "1980",
         "Mortality Rate, 2005*": "2005",
         "Mortality Rate, 2010*": "2010",
         "Mortality Rate, 2014*": "2014",
-        "% Change in Mortality Rate, 1980-2014": "%_Change_1980-2014"},inplace=True)
+        "% Change in Mortality Rate, 1980-2014": "Change_1980_2014"},inplace=True)
 
 #melt year columns into rows
-mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', '%_Change_1980-2014'], 
+mortality = mortality.melt(id_vars=['Location', 'FIPS', 'Category', 'Change_1980_2014'], 
         var_name="Date", 
         value_name="Value")
 
@@ -64,6 +113,7 @@ df_dict['mortality_county'] = mortality.query('FIPS > 1000').copy().reset_index(
 df_dict['mortality_county'][['County','State']] = df_dict['mortality_county']['Location'].str.rsplit(',',expand=True)
 df_dict['mortality_county']['FIPS'] = df_dict['mortality_county']['FIPS'].astype('int')
 df_dict['mortality_county'].drop(columns='Location',inplace=True)
+#df_dict['mortality_county']['class'] = Mortality_County
 
 #Split out state dataframe
 df_dict['mortality_state'] = mortality.query('FIPS < 1000').copy().reset_index(drop=True)
@@ -74,11 +124,15 @@ df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
 df_dict['mortality_us'] = mortality[mortality['FIPS'].isnull()].copy().reset_index(drop=True)
 df_dict['mortality_us'].drop(columns='FIPS',inplace=True)
 
-
+#build a dict of classes so that we can class_dict.get(key) and call our mapper class when doing the bulk insert for each dataframe / class
+class_dict = {}
+class_dict['mortality_county'] = Mortality_County
+class_dict['mortality_state'] = Mortality_State
+class_dict['mortality_us'] = Mortality_US
 
 
 #add any other transforms here
 
 #load sqlite db from df_dict
-load_db(df_dict,'mortality')
+load_db(df_dict,db_string)
 

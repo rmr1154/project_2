@@ -39,7 +39,7 @@ def welcome():
     return (
         f"Available Routes:<br/>"
         f'<a href="/api/v1.0/categories">/api/v1.0/categories</a></br>'
-         f'<a href="/api/v1.0/years">/api/v1.0/years</a></br>'
+        f'<a href="/api/v1.0/years">/api/v1.0/years</a></br>'
         f'<a href="/api/v1.0/county_all">/api/v1.0/county_all</a></br>'  
         f'<a href="/api/v1.0/county_year/2000">/api/v1.0/county_year/&ltyear&gt</a></br>'
         f'<a href="/api/v1.0/state_year/2000">/api/v1.0/state_year/&ltyear&gt</a></br>'
