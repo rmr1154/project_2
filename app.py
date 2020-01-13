@@ -3,8 +3,10 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
-from flask import Flask, jsonify, render_template, redirect
+from flask import Flask, jsonify, render_template, redirect, request
 from etl import * 
+import plotly
+import plotly.graph_objs as go
 
 
 #################################################
@@ -35,7 +37,9 @@ app = Flask(__name__)
 #################################################
 @app.route("/")
 def index():
-    return render_template('index.html')
+    feature = 'Bar'
+    bar = create_plot(feature)
+    return render_template('index.html', plot=bar)
 
 
 @app.route("/etl")
@@ -194,6 +198,43 @@ def us_year(year):
         all_data.append(mortality_dict)
 
     return jsonify(all_data)
+
+def create_plot(feature):
+    if feature == 'Bar':
+        N = 40
+        x = np.linspace(0, 1, N)
+        y = np.random.randn(N)
+        df = pd.DataFrame({'x': x, 'y': y}) # creating a sample dataframe
+        data = [
+            go.Bar(
+                x=df['x'], # assign x as the dataframe column 'x'
+                y=df['y']
+            )
+        ]
+    else:
+        N = 1000
+        random_x = np.random.randn(N)
+        random_y = np.random.randn(N)
+
+        # Create a trace
+        data = [go.Scatter(
+            x = random_x,
+            y = random_y,
+            mode = 'markers'
+        )]
+
+
+    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    print(graphJSON)
+    return graphJSON
+
+@app.route('/bar', methods=['GET', 'POST'])
+def change_features():
+
+    feature = request.args['selected']
+    graphJSON= create_plot(feature)
+
+    return graphJSON    
 
 if __name__ == '__main__':
     app.run(debug=True)
