@@ -18,6 +18,7 @@
     <div class="jumbotron text-center">
       <h1>Analysis of US Mortality Rates and Causes</h1>
       <p><a class="btn btn-primary btn-lg" href="/etl" role="button">Process ETL</a></p>
+      <a href="/api">Explore the API here</a>
     </div>
 
     <div class="row">
@@ -63,6 +64,16 @@
           <script>
             var graphs = {{ plot_4 | safe}};
             Plotly.plot('plot_4', graphs, {});
+          </script>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="chart3" id="plot_5">
+          <script>
+            var graphs = {{ plot_5 | safe}};
+            Plotly.plot('plot_5', graphs, {});
           </script>
         </div>
       </div>

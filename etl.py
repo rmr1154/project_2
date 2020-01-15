@@ -44,6 +44,8 @@ class Mortality_State(Base):
     Date = Column(String)
     Value = Column(Float)
     State = Column(String)
+    Lat = Column(Float)
+    Lon = Column(Float)
     
 class Mortality_US(Base):
     __tablename__ = 'mortality_us'
@@ -93,6 +95,9 @@ def process_etl():
     #import our csv into df
     mortality_src = "assets/data/mort.csv"
     mortality = pd.read_csv(mortality_src)
+    
+    state_src = "assets/data/state_lat_lon.csv"
+    state = pd.read_csv(state_src)
 
     #   ETL STEPS to clean the data for export to SQLite
     #remove the (min) and (max) for each year col
@@ -154,6 +159,7 @@ def process_etl():
     df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].astype('int')
     df_dict['mortality_state']['FIPS'] = df_dict['mortality_state']['FIPS'].apply(lambda x: '{0:0>2}'.format(x)).astype('str')
     df_dict['mortality_state'].rename(columns={"Location":"State"},inplace=True)
+    df_dict['mortality_state'] = df_dict['mortality_state'].merge(state, left_on='State', right_on='State', how='inner' )
 
     #split out us dataframe
     df_dict['mortality_us'] = mortality[mortality['FIPS'].isnull()].copy().reset_index(drop=True)
@@ -170,7 +176,5 @@ def process_etl():
     #load sqlite db from df_dict
     load_db(class_dict,df_dict,db_string)
     return 'ETL Processing Completed'
-
-
 
 

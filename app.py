@@ -46,7 +46,8 @@ def index():
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
     plot_4 = create_plot_4()
-    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4)
+    plot_5 = create_plot_5()
+    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
 
 
 
@@ -69,12 +70,16 @@ def api():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
+        f'<hr>'
         f'<a href="/api/v1.0/categories">/api/v1.0/categories</a></br>'
         f'<a href="/api/v1.0/years">/api/v1.0/years</a></br>'
         f'<a href="/api/v1.0/county_all">/api/v1.0/county_all</a></br>'  
         f'<a href="/api/v1.0/county_year/2000">/api/v1.0/county_year/&ltyear&gt</a></br>'
         f'<a href="/api/v1.0/state_year/2000">/api/v1.0/state_year/&ltyear&gt</a></br>'
         f'<a href="/api/v1.0/us_year/2000">/api/v1.0/us_year/&ltyear&gt</a></br>'
+        f'</br>'
+        f'<hr>'
+        f'<a href="/">Return to the Dashboard</a>'
 
     )
 
@@ -290,6 +295,133 @@ def create_plot_4():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
+
+def create_plot_5():
+
+    session = Session(engine)
+    df = pd.read_sql_table(table_name = 'mortality_state', con=session.connection(), index_col="index")
+    session.close()
+
+    data = []
+    layout = dict(
+        title = 'State Mortality per year 1985-2014<br>',
+        # showlegend = False,
+        autosize = False,
+        width = 1000,
+        height = 900,
+        hovermode = False,
+        legend = dict(
+            x=0.7,
+            y=-0.1,
+            bgcolor="rgba(255, 255, 255, 0)",
+            font = dict( size=11 ),
+        )
+    )
+    years = df['Date'].unique()
+
+    for i in range(len(years)):
+        geo_key = 'geo'+str(i+1) if i != 0 else 'geo'
+        lons = list(df[ df['Date'] == years[i] ]['Lon'])
+        lats = list(df[ df['Date'] == years[i] ]['Lat'])
+        # Walmart store data
+        data.append(
+            dict(
+                type = 'scattergeo',
+                showlegend=False,
+                lon = lons,
+                lat = lats,
+                geo = geo_key,
+                name = int(years[i]),
+                marker = dict(
+                    color = "rgb(0, 0, 255)",
+                    opacity = 0.5
+                )
+            )
+        )
+        # Year markers
+        data.append(
+            dict(
+                type = 'scattergeo',
+                showlegend = False,
+                lon = [-78],
+                lat = [47],
+                geo = geo_key,
+                text = [years[i]],
+                mode = 'text',
+            )
+        )
+        layout[geo_key] = dict(
+            scope = 'usa',
+            showland = True,
+            landcolor = 'rgb(229, 229, 229)',
+            showcountries = False,
+            domain = dict( x = [], y = [] ),
+            subunitcolor = "rgb(255, 255, 255)",
+        )
+
+
+    def draw_sparkline( domain, lataxis, lonaxis ):
+        ''' Returns a sparkline layout object for geo coordinates  '''
+        return dict(
+            showland = False,
+            showframe = False,
+            showcountries = False,
+            showcoastlines = False,
+            domain = domain,
+            lataxis = lataxis,
+            lonaxis = lonaxis,
+            bgcolor = 'rgba(255,200,200,0.0)'
+        )
+
+    # Stores per year sparkline
+    layout['geo44'] = draw_sparkline({'x':[0.6,0.8], 'y':[0,0.15]}, \
+                                    {'range':[-5.0, 30.0]}, {'range':[0.0, 40.0]} )
+    data.append(
+        dict(
+            type = 'scattergeo',
+            mode = 'lines',
+            lat = list(df.groupby(by=['Date']).count()['Category']/1e1),
+            lon = list(range(len(df.groupby(by=['Date']).count()['Category']/1e1))),
+            line = dict( color = "rgb(0, 0, 255)" ),
+            name = "New stores per year<br>Peak of 178 stores per year in 1990",
+            geo = 'geo44',
+        )
+    )
+
+    # Cumulative sum sparkline
+    layout['geo45'] = draw_sparkline({'x':[0.8,1], 'y':[0,0.15]}, \
+                                    {'range':[-5.0, 50.0]}, {'range':[0.0, 50.0]} )
+    data.append(
+        dict(
+            type = 'scattergeo',
+            mode = 'lines',
+            lat = list(df.groupby(by=['Date']).count().cumsum()['Category']/1e2),
+            lon = list(range(len(df.groupby(by=['Date']).count()['Category']/1e1))),
+            line = dict( color = "rgb(214, 39, 40)" ),
+            name ="Cumulative sum<br>3176 stores total in 2006",
+            geo = 'geo45',
+        )
+    )
+
+    z = 0
+    COLS = 4
+    ROWS = 2
+    for y in reversed(range(ROWS)):
+        for x in range(COLS):
+            geo_key = 'geo'+str(z+1) if z != 0 else 'geo'
+            layout[geo_key]['domain']['x'] = [float(x)/float(COLS), float(x+1)/float(COLS)]
+            layout[geo_key]['domain']['y'] = [float(y)/float(ROWS), float(y+1)/float(ROWS)]
+            z=z+1
+            if z > 42:
+                break
+
+    fig = go.Figure(data=data, layout=layout)
+    fig.update_layout(width=800)
+
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+    #fig.show()    
 
 def query_to_dict(rset):
     result = defaultdict(list)
