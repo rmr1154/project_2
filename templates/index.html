@@ -27,15 +27,16 @@
         <select class="form-control" id='first_cat'>
           <option value="Bar">Bar</option>
           <option value="Box">Boxplot</option>
+          <option value="Line">Line</option>
         </select>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12">
-        <div class="chart" id="bargraph">
+        <div class="chart" id="plot_1">
           <script>
-            var graphs = {{ plot | safe}};
-            Plotly.plot('bargraph', graphs, {});
+            var graphs = {{ plot_1 | safe}};
+            Plotly.plot('plot_1', graphs, {});
           </script>
         </div>
       </div>

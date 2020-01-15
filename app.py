@@ -42,12 +42,12 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     feature = 'Bar'
-    bar = create_plot(feature)
+    plot_1 = create_plot_1(feature)
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
     plot_4 = create_plot_4()
     plot_5 = create_plot_5()
-    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
+    return render_template('index.html', plot_1 = plot_1, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
 
 
 
@@ -205,45 +205,44 @@ def us_year(year):
 
     return jsonify(all_data)
 
-def create_plot(feature):
-    
+@app.route('/bar', methods=['GET', 'POST'])
+def change_features():
+
+    feature = request.args['selected']
+    graphJSON = create_plot_1(feature)
+
+    return graphJSON    
+
+def create_plot_1(feature):
     session = Session(engine)
-    # result = session.query(mortality_us.Category, mortality_us.Date, mortality_us.Value)
-    # df = pd.DataFrame(query_to_dict(result))
-    df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    df = pd.read_sql(f"select sum(value) as Value, Category, Date from mortality_us group by Category, Date ", con=session.connection())
     session.close()
 
     if feature == 'Box':
 
-        data = [
+        fig = [
             go.Box(
                 x=df['Category'], # assign x as the dataframe column 'x'
                 y=df['Value']
             )
         ]
+    elif feature == 'Bar':
+
+        fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
+        
+        fig.update_layout(barmode='stack')
+    
     else:
-        N = 1000
-        random_x = np.random.randn(N)
-        random_y = np.random.randn(N)
-
-        # Create a trace
-        data = [go.Bar(
-                x=df['Category'], # assign x as the dataframe column 'x'
-                y=df['Value']
-            )]
 
 
-    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+        fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
+    
+        #fig.update_layout(barmode='stack')
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
-
-@app.route('/bar', methods=['GET', 'POST'])
-def change_features():
-
-    feature = request.args['selected']
-    graphJSON= create_plot(feature)
-
-    return graphJSON    
 
 def create_plot_2():
     session = Session(engine)

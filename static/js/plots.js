@@ -10,7 +10,7 @@ $('#first_cat').on('change',function(){
         },
         dataType:"json",
         success: function (data) {
-            Plotly.newPlot('bargraph', data );
+            Plotly.newPlot('plot_1', data );
         }
     });
 })
