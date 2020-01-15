@@ -9,6 +9,8 @@ from etl import *
 import plotly
 import plotly.graph_objs as go
 from collections import defaultdict
+from urllib.request import urlopen
+import json
 
 
 #################################################
@@ -43,7 +45,8 @@ def index():
     bar = create_plot(feature)
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
-    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3)
+    plot_4 = create_plot_4()
+    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4)
 
 
 
@@ -269,7 +272,24 @@ def create_plot_3():
     #print(graphJSON)
     return graphJSON
 
+def create_plot_4():
+    with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+        counties = json.load(response)
 
+    session = Session(engine)
+    df = pd.read_sql_table(table_name = 'mortality_county', con=session.connection(), index_col="index")
+    session.close()
+
+    fig = go.Figure(go.Choroplethmapbox(geojson=counties, locations=df.FIPS, z=df.Value,
+                                        colorscale="Viridis", zmin=0, zmax=12,
+                                        marker_opacity=0.5, marker_line_width=0))
+    fig.update_layout(mapbox_style="carto-positron",
+                    mapbox_zoom=3, mapbox_center = {"lat": 37.0902, "lon": -95.7129})
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
 
 def query_to_dict(rset):
     result = defaultdict(list)

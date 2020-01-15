@@ -29,32 +29,41 @@
         </select>
       </div>
     </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div class="chart" id="bargraph">
-            <script>
-              var graphs = {{ plot | safe}};
-              Plotly.plot('bargraph', graphs, {});
-            </script>
-          </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="chart" id="bargraph">
+          <script>
+            var graphs = {{ plot | safe}};
+            Plotly.plot('bargraph', graphs, {});
+          </script>
         </div>
       </div>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="chart2" id="plot_2">
-            <script>
-              var graphs = {{ plot_2 | safe}};
-              Plotly.plot('plot_2', graphs, {});
-            </script>
-          </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="chart2" id="plot_2">
+          <script>
+            var graphs = {{ plot_2 | safe}};
+            Plotly.plot('plot_2', graphs, {});
+          </script>
         </div>
-        <div class="col-md-6">
-          <div class="chart3" id="plot_3">
-            <script>
-              var graphs = {{ plot_3 | safe}};
-              Plotly.plot('plot_3', graphs, {});
-            </script>
-          </div>
+      </div>
+      <div class="col-md-6">
+        <div class="chart3" id="plot_3">
+          <script>
+            var graphs = {{ plot_3 | safe}};
+            Plotly.plot('plot_3', graphs, {});
+          </script>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="chart3" id="plot_4">
+          <script>
+            var graphs = {{ plot_4 | safe}};
+            Plotly.plot('plot_4', graphs, {});
+          </script>
         </div>
       </div>
     </div>
