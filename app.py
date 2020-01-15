@@ -213,10 +213,10 @@ def create_plot(feature):
     df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
     session.close()
 
-    if feature == 'Bar':
+    if feature == 'Box':
 
         data = [
-            go.Bar(
+            go.Box(
                 x=df['Category'], # assign x as the dataframe column 'x'
                 y=df['Value']
             )
@@ -227,7 +227,7 @@ def create_plot(feature):
         random_y = np.random.randn(N)
 
         # Create a trace
-        data = [go.Scatter(
+        data = [go.Bar(
                 x=df['Category'], # assign x as the dataframe column 'x'
                 y=df['Value']
             )]
