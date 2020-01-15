@@ -221,24 +221,24 @@ def create_plot_1(feature):
 
     if feature == 'Box':
 
-        fig = [
+        fig = go.Figure(data = [
             go.Box(
                 x=df['Category'], # assign x as the dataframe column 'x'
                 y=df['Value']
             )
-        ]
+        ])
+        fig.update_layout(title="Box Plot - All Years by Category")
+    
     elif feature == 'Bar':
 
         fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
-        
         fig.update_layout(barmode='stack')
+        fig.update_layout(title="Stacked Bar Chart - Category by Year")
     
     else:
 
-
         fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
-    
-        #fig.update_layout(barmode='stack')
+        fig.update_layout(title="Line Chart - Category by Year")
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
@@ -249,14 +249,15 @@ def create_plot_2():
     df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
     session.close()
 
-    data = [
+    fig = go.Figure(data = [
             go.Scatterpolar(
                 theta=df['Category'], # assign x as the dataframe column 'x'
                 r=df['Value']
             )
-        ]
+        ])
+    fig.update_layout(title="Radar Chart - Category (All Years)")
     
-    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
 
@@ -265,14 +266,15 @@ def create_plot_3():
     df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
     session.close()
 
-    data = [
+    fig = go.Figure(data = [
             go.Pie(
                 labels=df['Category'], # assign x as the dataframe column 'x'
                 values=df['Value']
             )
-        ]
+        ])
+    fig.update_layout(title="Pie Chart - Category (All Years)")
 
-    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
 
@@ -296,7 +298,9 @@ def create_plot_4():
                                         marker_opacity=0.5, marker_line_width=0))
     fig.update_layout(mapbox_style="carto-positron",
                     mapbox_zoom=3, mapbox_center = {"lat": 37.0902, "lon": -95.7129})
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    #fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.update_layout(title="US Mortality by County - Category (All Years)")
+    fig.update_layout(height=600)
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
@@ -423,19 +427,14 @@ def create_plot_5():
 
     fig = go.Figure(data=data, layout=layout)
     fig.update_layout(width=800)
+    fig.update_layout(title="Mortality by State Over Time")
 
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
     #fig.show()    
 
-def query_to_dict(rset):
-    result = defaultdict(list)
-    for obj in rset:
-        instance = inspect(obj)
-        for key, x in instance.attrs.items():
-            result[key].append(x.value)
-    return result
+
 
 
 if __name__ == '__main__':
