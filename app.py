@@ -267,9 +267,9 @@ def create_plot_3():
     session.close()
 
     data = [
-            go.Scatterpolar(
-                theta=df['Category'], # assign x as the dataframe column 'x'
-                r=df['Value']
+            go.Pie(
+                labels=df['Category'], # assign x as the dataframe column 'x'
+                values=df['Value']
             )
         ]
 
@@ -282,11 +282,18 @@ def create_plot_4():
         counties = json.load(response)
 
     session = Session(engine)
-    df = pd.read_sql_table(table_name = 'mortality_county', con=session.connection(), index_col="index")
+    #df = pd.read_sql_table(table_name = 'mortality_county', con=session.connection(), index_col="index")
+    #df = pd.read_sql(f"select * from mortality_county where Date = '2014' and Category = 'Diabetes'", con=session.connection(), index_col="index")
+    df = pd.read_sql(f"select sum(value) as Value, FIPS from mortality_county where Date = '2014' and Category = 'Mental disorders' group by FIPS", con=session.connection())
     session.close()
 
+    colorscale = ["#f7fbff","#ebf3fb","#deebf7","#d2e3f3","#c6dbef","#b3d2e9","#9ecae1",
+              "#85bcdb","#6baed6","#57a0ce","#4292c6","#3082be","#2171b5","#1361a9",
+              "#08519c","#0b4083","#08306b"]
+
     fig = go.Figure(go.Choroplethmapbox(geojson=counties, locations=df.FIPS, z=df.Value,
-                                        colorscale="Viridis", zmin=0, zmax=12,
+                                        #colorscale=colorscale, #"Viridis", #zmin=0, zmax=50,
+                                        colorscale="Viridis", #zmin=0, zmax=50,
                                         marker_opacity=0.5, marker_line_width=0))
     fig.update_layout(mapbox_style="carto-positron",
                     mapbox_zoom=3, mapbox_center = {"lat": 37.0902, "lon": -95.7129})
