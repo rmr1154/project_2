@@ -41,8 +41,9 @@ app = Flask(__name__)
 def index():
     feature = 'Bar'
     bar = create_plot(feature)
-    radar = create_plot_2()
-    return render_template('index.html', plot=bar,plot_2=radar)
+    plot_2 = create_plot_2()
+    plot_3 = create_plot_3()
+    return render_template('index.html', plot = bar, plot_2 = plot_2, plot_3 = plot_3)
 
 
 
@@ -248,6 +249,22 @@ def create_plot_2():
             )
         ]
     
+    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+
+def create_plot_3():
+    session = Session(engine)
+    df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    session.close()
+
+    data = [
+            go.Scatterpolar(
+                theta=df['Category'], # assign x as the dataframe column 'x'
+                r=df['Value']
+            )
+        ]
+
     graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
