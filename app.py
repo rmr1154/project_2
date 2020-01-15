@@ -3,10 +3,12 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
+from sqlalchemy.inspection import inspect
 from flask import Flask, jsonify, render_template, redirect, request
 from etl import * 
 import plotly
 import plotly.graph_objs as go
+from collections import defaultdict
 
 
 #################################################
@@ -39,7 +41,10 @@ app = Flask(__name__)
 def index():
     feature = 'Bar'
     bar = create_plot(feature)
-    return render_template('index.html', plot=bar)
+    radar = create_plot_2()
+    return render_template('index.html', plot=bar,plot_2=radar)
+
+
 
 
 @app.route("/etl")
@@ -192,15 +197,19 @@ def us_year(year):
     return jsonify(all_data)
 
 def create_plot(feature):
+    
+    session = Session(engine)
+    # result = session.query(mortality_us.Category, mortality_us.Date, mortality_us.Value)
+    # df = pd.DataFrame(query_to_dict(result))
+    df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    session.close()
+
     if feature == 'Bar':
-        N = 40
-        x = np.linspace(0, 1, N)
-        y = np.random.randn(N)
-        df = pd.DataFrame({'x': x, 'y': y}) # creating a sample dataframe
+
         data = [
             go.Bar(
-                x=df['x'], # assign x as the dataframe column 'x'
-                y=df['y']
+                x=df['Category'], # assign x as the dataframe column 'x'
+                y=df['Value']
             )
         ]
     else:
@@ -210,10 +219,9 @@ def create_plot(feature):
 
         # Create a trace
         data = [go.Scatter(
-            x = random_x,
-            y = random_y,
-            mode = 'markers'
-        )]
+                x=df['Category'], # assign x as the dataframe column 'x'
+                y=df['Value']
+            )]
 
 
     graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
@@ -227,6 +235,33 @@ def change_features():
     graphJSON= create_plot(feature)
 
     return graphJSON    
+
+def create_plot_2():
+    session = Session(engine)
+    df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    session.close()
+
+    data = [
+            go.Scatterpolar(
+                theta=df['Category'], # assign x as the dataframe column 'x'
+                r=df['Value']
+            )
+        ]
+    
+    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+
+
+
+def query_to_dict(rset):
+    result = defaultdict(list)
+    for obj in rset:
+        instance = inspect(obj)
+        for key, x in instance.attrs.items():
+            result[key].append(x.value)
+    return result
+
 
 if __name__ == '__main__':
     app.run(debug=True)

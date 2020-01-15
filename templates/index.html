@@ -41,8 +41,11 @@
       </div>
       <div class="row">
         <div class="col-md-6">
-          <div class="chart2" id="bargraph2">
-            graph2
+          <div class="chart2" id="plot_2">
+            <script>
+              var graphs = {{ plot_2 | safe}};
+              Plotly.plot('plot_2', graphs, {});
+            </script>
           </div>
         </div>
         <div class="col-md-6">
