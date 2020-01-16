@@ -43,11 +43,13 @@ app = Flask(__name__)
 def index():
     feature = 'Bar'
     plot_1 = create_plot_1(feature)
+    plot_top5 = create_plot_top5(feature)
+    plot_bot5 = create_plot_bot5(feature)
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
     plot_4 = create_plot_4()
     plot_5 = create_plot_5()
-    return render_template('index.html', plot_1 = plot_1, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
+    return render_template('index.html', plot_1 = plot_1, plot_top5 = plot_top5, plot_bot5 = plot_bot5, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
 
 
 
@@ -210,8 +212,24 @@ def change_features():
 
     feature = request.args['selected']
     graphJSON = create_plot_1(feature)
-
+    
     return graphJSON    
+
+@app.route('/bar2', methods=['GET', 'POST'])
+def change_features2():
+
+    feature = request.args['selected']
+    graphJSON = create_plot_top5(feature)
+    
+    return graphJSON   
+
+@app.route('/bar3', methods=['GET', 'POST'])
+def change_features3():
+
+    feature = request.args['selected']
+    graphJSON = create_plot_bot5(feature)
+    
+    return graphJSON   
 
 def create_plot_1(feature):
     session = Session(engine)
@@ -239,6 +257,68 @@ def create_plot_1(feature):
 
         fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
         fig.update_layout(title="Line Chart - Category by Year")
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+
+def create_plot_top5(feature):
+    session = Session(engine)
+    #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value desc limit 6) order by f.Value desc,f.Date asc;", con=session.connection())
+    session.close()
+
+    if feature == 'Box':
+
+        fig = go.Figure(data = [
+            go.Box(
+                x=df['Category'], # assign x as the dataframe column 'x'
+                y=df['Value']
+            )
+        ])
+        fig.update_layout(title="Box Plot - Top 6 - All Years by Category")
+    
+    elif feature == 'Bar':
+
+        fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
+        fig.update_layout(barmode='stack')
+        fig.update_layout(title="Stacked Bar Chart (Top 6) - Category by Year")
+    
+    else:
+
+        fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
+        fig.update_layout(title="Line Chart (Top 6) - Category by Year")
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+
+def create_plot_bot5(feature):
+    session = Session(engine)
+    #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
+    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value asc limit 5) order by f.Value asc,f.Date asc;", con=session.connection())
+    session.close()
+
+    if feature == 'Box':
+
+        fig = go.Figure(data = [
+            go.Box(
+                x=df['Category'], # assign x as the dataframe column 'x'
+                y=df['Value']
+            )
+        ])
+        fig.update_layout(title="Box Plot - Top 6 - All Years by Category")
+    
+    elif feature == 'Bar':
+
+        fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
+        fig.update_layout(barmode='stack')
+        fig.update_layout(title="Stacked Bar Chart (Top 6) - Category by Year")
+    
+    else:
+
+        fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
+        fig.update_layout(title="Line Chart (Top 6) - Category by Year")
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
@@ -313,6 +393,7 @@ def create_plot_5():
     session.close()
 
     data = []
+
     layout = dict(
         title = 'State Mortality per year 1985-2014<br>',
         # showlegend = False,
