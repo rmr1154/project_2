@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>US Mortality Rates</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="jumbotron text-center">
+            <h1>Analysis of US Mortality Rates and Causes</h1>
+            <h4>(1980 - 2014)</h4>
+            <p><a class="btn btn-primary btn-lg" href="/etl" role="button">Process ETL</a></p>
+            <a href="/api">Explore the API here</a>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-3">
+                <label> Choose the plot type....</label>
+                <select class="form-control" id='first_cat'>
+          <option value="Bar">Bar</option>
+          <option value="Box">Boxplot</option>
+          <option value="Line">Line</option>
+        </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart" id="plot_1">
+                    <script>
+                        var graphs = {{plot_1 | safe}};
+                        Plotly.plot('plot_1', graphs, {});
+                    </script>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart" id="plot_top5">
+                    <script>
+                        var graphs = {{plot_top5 | safe}};
+                        Plotly.plot('plot_top5', graphs, {});
+                    </script>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart" id="plot_bot5">
+                    <script>
+                        var graphs = {{plot_bot5 | safe}};
+                        Plotly.plot('plot_bot5', graphs, {});
+                    </script>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart2" id="plot_2">
+                    <script>
+                        var graphs = {{plot_2 | safe}};
+                        Plotly.plot('plot_2', graphs, {});
+                    </script>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart3" id="plot_3">
+                    <script>
+                        var graphs = {{plot_3 | safe}};
+                        Plotly.plot('plot_3', graphs, {});
+                    </script>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart3" id="plot_4">
+                    <script>
+                        var graphs = {{plot_4 | safe}};
+                        Plotly.plot('plot_4', graphs, {});
+                    </script>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart3" id="plot_5">
+                    <script>
+                        var graphs = {{plot_5 | safe}};
+                        Plotly.plot('plot_5', graphs, {});
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/jquery-1.11.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
+</body>
+
+</html>

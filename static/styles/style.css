@@ -1,0 +1,64 @@
+.main {
+  padding:20px;
+  background: white;
+  background: linear-gradient(180deg, white 0%, whitesmoke 100%);
+}
+
+h4.heading {margin:0px;}
+
+#latest_news {
+margin-left: 0px;
+margin-right: 0px;  
+}
+
+.disp-image {
+    max-width: 100%;
+    height: auto;
+
+  }
+
+  .weather{
+    margin:10px;
+    padding:5px;
+    border:1px solid grey;
+    text-align: left;
+    border-radius: 5px;
+    
+  }
+
+  .weather p {
+    font-size: small;
+    margin:10px;
+  }
+  .weather h4 {
+    padding:5px;
+    margin:10px;
+  }
+  
+  .facts {
+    margin:10px;
+    padding:5px;
+  }
+
+
+
+  .hemi {
+  text-align: center;   
+  font-weight: bold; 
+  border:1px solid lightgrey;
+  border-radius: 5px;
+  }
+
+.row.hemi-container{
+    padding:20px;
+
+    background: white;
+    background: linear-gradient(180deg, white 0%, whitesmoke 100%);
+  }
+  .row.hemi-container h4 {
+    text-align: center;
+  }
+  .row.hemi h5 {
+    text-align: center;
+    padding:15px;
+  }
