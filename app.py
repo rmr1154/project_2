@@ -47,11 +47,11 @@ def index():
     plot_bot5 = create_plot_bot5(feature)
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
-    plot_4 = create_plot_4()
+    #plot_4 = create_plot_4()
     plot_5 = create_plot_5()
     return render_template('index.html', plot_1 = plot_1, plot_top5 = plot_top5, plot_bot5 = plot_bot5, plot_2 = plot_2
     , plot_3 = plot_3
-    , plot_4 = plot_4
+    #, plot_4 = plot_4
     , plot_5 = plot_5)
 
 
@@ -247,31 +247,22 @@ def create_plot_1(feature):
     fig = go.Figure()
 
     if feature == 'Box':
-        val = df['Value']
-        cat = df['Category']
-
-        # fig.add_trace(
-        #         go.Box(
-        #             visible=True,
-        #             x=cat, # assign x as the dataframe column 'x'
-        #             y=val,
-        #             name = 'All'
-        #         )
-        #     )
-        
         cnt = 1
         for i in dates:
             val = df.query(f'Date == "{i}"')['Value']
-            cat = df.query(f'Date == "{i}"')['Category']
+            #cat = df.query(f'Date == "{i}"')['Category']
             fig.add_trace(
                 go.Box(
                     visible=False,
-                    x=cat, # assign x as the dataframe column 'x'
+                    x=df.query(f'Date == "{i}"')['Category'], # assign x as the dataframe column 'x'
                     y=val,
                     name = i
                 )
             )
-            cnt += 1
+            if cnt == len(df['Date'].unique()):
+                fig.data[0].visible = True
+            else:
+                cnt += 1
 
         # fig = go.Figure(data = [[
         #     go.Box(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()]
@@ -282,16 +273,6 @@ def create_plot_1(feature):
         fig.update_layout(title="Box Plot - All Years by Category")
     
     elif feature == 'Bar':
-
-        # fig.add_trace(
-        #         go.Bar(
-        #             visible=True,
-        #             x=cat, # assign x as the dataframe column 'x'
-        #             y=df['Value'],
-        #             name = 'All'
-        #         )
-        #     )
-        
         cnt = 1
         for i in df['Date'].unique():
             val = df.query(f'Date == "{i}"')['Value']
@@ -303,20 +284,15 @@ def create_plot_1(feature):
                     name = i
                 )
             )
-            cnt += 1
+            if cnt == len(df['Date'].unique()):
+                fig.data[0].visible = True
+            else:
+                cnt += 1
         #fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
         fig.update_layout(barmode='stack')
         fig.update_layout(title="Stacked Bar Chart - Category by Year")
     
     else:
-        # fig.add_trace(
-        #     go.Scatter(
-        #         visible=True,
-        #         x=cat, # assign x as the dataframe column 'x'
-        #         y=df['Value'],
-        #         name = 'All'
-        #     )
-        # )
         cnt = 1
         for i in df['Date'].unique():
             val = df.query(f'Date == "{i}"')['Value']
@@ -328,9 +304,10 @@ def create_plot_1(feature):
                     name = i
                 )
             )
-            cnt += 1
-
-
+            if cnt == len(df['Date'].unique()):
+                fig.data[0].visible = True
+            else:
+                cnt += 1
 
         #fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
         fig.update_layout(title="Line Chart - Category by Year")
