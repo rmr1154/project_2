@@ -47,11 +47,11 @@ def index():
     plot_bot5 = create_plot_bot5(feature)
     plot_2 = create_plot_2()
     plot_3 = create_plot_3()
-    #plot_4 = create_plot_4()
+    plot_4 = create_plot_4()
     plot_5 = create_plot_5()
     return render_template('index.html', plot_1 = plot_1, plot_top5 = plot_top5, plot_bot5 = plot_bot5, plot_2 = plot_2
     , plot_3 = plot_3
-    #, plot_4 = plot_4
+    , plot_4 = plot_4
     , plot_5 = plot_5)
 
 
@@ -590,9 +590,9 @@ def create_plot_4():
     #print(graphJSON)
     return graphJSON
 
-def create_plot_5():
+def create_plot_5x():
     session = Session(engine)
-    df = pd.read_sql(f"select Value, Category, Date from mortality_us", con=session.connection())
+    df = pd.read_sql(f"select Value, Category, Date from mortality_state", con=session.connection())
     session.close()
     
    
@@ -611,7 +611,7 @@ def create_plot_5():
                 x=cat, # assign x as the dataframe column 'x'
                 y=val,
                 name = i,
-                mode='lines'
+                mode='markers'
             )
         )
         if cnt == len(df['Date'].unique()):
@@ -641,6 +641,72 @@ def create_plot_5():
     )
 
     fig.update_yaxes(range=[0, ymax])
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #print(graphJSON)
+    return graphJSON
+    #fig.show()    
+
+def create_plot_5():
+    session = Session(engine)
+    df = pd.read_sql(f"select Value, Category, Date from mortality_us", con=session.connection())
+    session.close()
+    
+    df = df.pivot(index='Date',columns='Category',values='Value')
+    
+    ymax=df.max()
+
+    fig = go.Figure()
+
+    fig = go.Figure(data=go.Splom(dimensions=[dict(label=c, values=df[c]) for c in df.columns],text=df.index
+    ,marker=dict(color=df.index.astype('int'),size=5,colorscale='Bluered',line=dict(width=0.5,color='rgb(230,230,230)'))))
+
+
+    
+    # cnt = 1
+    # for i in df['Date'].unique():
+    #     val = df.query(f'Date == "{i}"')['Value']
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             visible=False,
+    #             x=cat, # assign x as the dataframe column 'x'
+    #             y=val,
+    #             name = i,
+    #             mode='markers'
+    #         )
+    #     )
+    #     if cnt == len(df['Date'].unique()):
+    #         fig.data[cnt-1].visible = True
+    #     else:
+    #         cnt += 1
+
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="restyle",
+            args=["visible", [False] * len(fig.data)],
+            label=fig.data[i]['name']
+        )
+        step["args"][1][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+    
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "Year: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+    
+    fig.update_layout(
+        sliders=sliders
+    )
+
+    fig.update_yaxes(range=[0, ymax])
+    fig.update_layout(title='Scatter Plot Matrix',
+                  dragmode='select',
+                  width=1000,
+                  height=1000,
+                  hovermode='closest')
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
