@@ -49,7 +49,10 @@ def index():
     plot_3 = create_plot_3()
     plot_4 = create_plot_4()
     plot_5 = create_plot_5()
-    return render_template('index.html', plot_1 = plot_1, plot_top5 = plot_top5, plot_bot5 = plot_bot5, plot_2 = plot_2, plot_3 = plot_3, plot_4 = plot_4, plot_5 = plot_5)
+    return render_template('index.html', plot_1 = plot_1, plot_top5 = plot_top5, plot_bot5 = plot_bot5, plot_2 = plot_2
+    , plot_3 = plot_3
+    , plot_4 = plot_4
+    , plot_5 = plot_5)
 
 
 
@@ -234,29 +237,126 @@ def change_features3():
 def create_plot_1(feature):
     session = Session(engine)
     #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
-    df = pd.read_sql(f"select sum(value) as Value, Category, Date from mortality_us group by Category, Date ", con=session.connection())
+    df = pd.read_sql(f"select Value, Category, Date from mortality_state", con=session.connection())
     session.close()
 
-    if feature == 'Box':
+    cat = df['Category'].unique()
+    dates = df['Date'].unique()
+    ymax = df['Value'].max()
 
-        fig = go.Figure(data = [
-            go.Box(
-                x=df['Category'], # assign x as the dataframe column 'x'
-                y=df['Value']
+    fig = go.Figure()
+
+    if feature == 'Box':
+        val = df['Value']
+        cat = df['Category']
+
+        # fig.add_trace(
+        #         go.Box(
+        #             visible=True,
+        #             x=cat, # assign x as the dataframe column 'x'
+        #             y=val,
+        #             name = 'All'
+        #         )
+        #     )
+        
+        cnt = 1
+        for i in dates:
+            val = df.query(f'Date == "{i}"')['Value']
+            cat = df.query(f'Date == "{i}"')['Category']
+            fig.add_trace(
+                go.Box(
+                    visible=False,
+                    x=cat, # assign x as the dataframe column 'x'
+                    y=val,
+                    name = i
+                )
             )
-        ])
+            cnt += 1
+
+        # fig = go.Figure(data = [[
+        #     go.Box(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()]
+        #     ,go.Box(name='All', x=df['Date'], y=df['Value'])
+        #     ])
+        
+
         fig.update_layout(title="Box Plot - All Years by Category")
     
     elif feature == 'Bar':
 
-        fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
+        # fig.add_trace(
+        #         go.Bar(
+        #             visible=True,
+        #             x=cat, # assign x as the dataframe column 'x'
+        #             y=df['Value'],
+        #             name = 'All'
+        #         )
+        #     )
+        
+        cnt = 1
+        for i in df['Date'].unique():
+            val = df.query(f'Date == "{i}"')['Value']
+            fig.add_trace(
+                go.Bar(
+                    visible=False,
+                    x=cat, # assign x as the dataframe column 'x'
+                    y=val,
+                    name = i
+                )
+            )
+            cnt += 1
+        #fig = go.Figure(data = [go.Bar(name=i, x=df.query(f'Date == "{i}"')['Category'], y=df.query(f'Date == "{i}"')['Value']) for i in df['Date'].unique()])
         fig.update_layout(barmode='stack')
         fig.update_layout(title="Stacked Bar Chart - Category by Year")
     
     else:
+        # fig.add_trace(
+        #     go.Scatter(
+        #         visible=True,
+        #         x=cat, # assign x as the dataframe column 'x'
+        #         y=df['Value'],
+        #         name = 'All'
+        #     )
+        # )
+        cnt = 1
+        for i in df['Date'].unique():
+            val = df.query(f'Date == "{i}"')['Value']
+            fig.add_trace(
+                go.Scatter(
+                    visible=False,
+                    x=cat, # assign x as the dataframe column 'x'
+                    y=val,
+                    name = i
+                )
+            )
+            cnt += 1
 
-        fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
+
+
+        #fig = go.Figure(data = [go.Scatter(name=i, x=df.query(f'Category == "{i}"')['Date'], y=df.query(f'Category == "{i}"')['Value']) for i in df['Category'].unique()])
         fig.update_layout(title="Line Chart - Category by Year")
+    
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="restyle",
+            args=["visible", [False] * len(fig.data)],
+            label=fig.data[i]['name']
+        )
+        step["args"][1][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+    
+    sliders = [dict(
+        active=0,
+        currentvalue={"prefix": "Year: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+    
+    fig.update_layout(
+        sliders=sliders
+    )
+
+    fig.update_yaxes(range=[0, ymax])
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
@@ -265,7 +365,7 @@ def create_plot_1(feature):
 def create_plot_top5(feature):
     session = Session(engine)
     #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
-    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value desc limit 6) order by f.Value desc,f.Date asc;", con=session.connection())
+    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value desc limit 6) order by f.Date asc;", con=session.connection())
     session.close()
 
     if feature == 'Box':
@@ -296,7 +396,7 @@ def create_plot_top5(feature):
 def create_plot_bot5(feature):
     session = Session(engine)
     #df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
-    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value asc limit 5) order by f.Value asc,f.Date asc;", con=session.connection())
+    df = pd.read_sql(f"select f.Category,f.date, f.Value from mortality_us f where rowid in (select rowid from mortality_us where Date = f.Date order by Value asc limit 5) order by f.Date asc;", con=session.connection())
     session.close()
 
     if feature == 'Box':
@@ -328,7 +428,9 @@ def create_plot_2():
     session = Session(engine)
     df = pd.read_sql_table(table_name = 'mortality_us', con=session.connection(), index_col="index")
     session.close()
-
+    
+    ymax = df['Value'].max()
+    
     fig = go.Figure(data = [
             go.Scatterpolar(
                 theta=df['Category'], # assign x as the dataframe column 'x'
@@ -336,6 +438,29 @@ def create_plot_2():
             )
         ])
     fig.update_layout(title="Radar Chart - Category (All Years)")
+    
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="restyle",
+            args=["visible", [False] * len(fig.data)],
+            label=fig.data[i]['name']
+        )
+        step["args"][1][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+    
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "Year: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+    
+    fig.update_layout(
+        sliders=sliders
+    )
+
+    fig.update_yaxes(range=[0, ymax])
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
@@ -365,156 +490,185 @@ def create_plot_4():
     session = Session(engine)
     #df = pd.read_sql_table(table_name = 'mortality_county', con=session.connection(), index_col="index")
     #df = pd.read_sql(f"select * from mortality_county where Date = '2014' and Category = 'Diabetes'", con=session.connection(), index_col="index")
-    df = pd.read_sql(f"select sum(value) as Value, FIPS from mortality_county where Date = '2014' and Category = 'Mental disorders' group by FIPS", con=session.connection())
+    df = pd.read_sql(f"select Value, FIPS, Category, Date from mortality_county where Date = '2014'", con=session.connection())
     session.close()
+    
+    cat = df['Category'].unique()
+    #dates  = df['Date'].unique()
+    #data = []    
+    
+    fig = go.Figure()
 
-    colorscale = ["#f7fbff","#ebf3fb","#deebf7","#d2e3f3","#c6dbef","#b3d2e9","#9ecae1",
-              "#85bcdb","#6baed6","#57a0ce","#4292c6","#3082be","#2171b5","#1361a9",
-              "#08519c","#0b4083","#08306b"]
-
-    fig = go.Figure(go.Choroplethmapbox(geojson=counties, locations=df.FIPS, z=df.Value,
-                                        #colorscale=colorscale, #"Viridis", #zmin=0, zmax=50,
-                                        colorscale="Viridis", #zmin=0, zmax=50,
-                                        marker_opacity=0.5, marker_line_width=0))
+    cnt = 1
+    for c in cat:
+        cat_df = df.query(f'Category == "{c}"')
+        fig.add_trace( go.Choroplethmapbox(geojson=counties, locations=cat_df.FIPS, z=cat_df.Value,
+                                         colorscale = "Viridis",
+                                         name = c,
+                                         #text =regions, 
+                                         #colorbar = dict(thickness=20, ticklen=3),
+                                         marker_line_width=0, marker_opacity=0.7,
+                                         visible=False))
+        
+        if cnt == len(cat):
+            fig.data[cnt-1].visible = True
+        else:
+            cnt += 1
+       
+    
     fig.update_layout(mapbox_style="carto-positron",
                     mapbox_zoom=3, mapbox_center = {"lat": 37.0902, "lon": -95.7129})
     #fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    fig.update_layout(title="US Mortality by County - Category (All Years)")
+    fig.update_layout(title="US Mortality by County - Category (2014)")
     fig.update_layout(height=600)
+
+    button_layer_1_height = 1.12 #08
+    fig.update_layout(
+        updatemenus=[
+            go.layout.Updatemenu(
+                buttons=list([
+                    dict(
+                        args=["colorscale", "Viridis"],
+                        label="Viridis",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Cividis"],
+                        label="Cividis",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Blues"],
+                        label="Blues",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Greens"],
+                        label="Greens",
+                        method="restyle"
+                    ),
+                ]),
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.1,
+                xanchor="left",
+                y=button_layer_1_height,
+                yanchor="top"
+            ),
+            go.layout.Updatemenu(
+                buttons=list([
+                    dict(
+                        args=["reversescale", False],
+                        label="False",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["reversescale", True],
+                        label="True",
+                        method="restyle"
+                    )
+                ]),
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.37,
+                xanchor="left",
+                y=button_layer_1_height,
+                yanchor="top"
+            )
+        ]
+    )
+
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="restyle",
+            args=["visible", [False] * len(fig.data)],
+            label=fig.data[i]['name']
+        )
+        step["args"][1][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+    
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "COD: "},
+        pad={"t": 50},
+        steps=steps        
+    )]
+    
+    fig.update_layout(
+        sliders=sliders
+    )
+
+    fig.update_layout(
+        annotations=[
+            go.layout.Annotation(text="colorscale", x=0, xref="paper", y=1.06, yref="paper",
+                                align="left", showarrow=False),
+            go.layout.Annotation(text="Reverse<br>Colorscale", x=0.25, xref="paper", y=1.07,
+                                yref="paper", showarrow=False)
+        ])
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
 
 def create_plot_5():
-
     session = Session(engine)
-    df = pd.read_sql_table(table_name = 'mortality_state', con=session.connection(), index_col="index")
+    df = pd.read_sql(f"select Value, Category, Date from mortality_us", con=session.connection())
     session.close()
+    
+   
+    cat = df['Category'].unique()
+    dates  = df['Date'].unique()
+    ymax = df['Value'].max()
 
-    data = []
-
-    layout = dict(
-        title = 'State Mortality per year 1985-2014<br>',
-        # showlegend = False,
-        autosize = False,
-        width = 1000,
-        height = 900,
-        hovermode = False,
-        legend = dict(
-            x=0.7,
-            y=-0.1,
-            bgcolor="rgba(255, 255, 255, 0)",
-            font = dict( size=11 ),
-        )
-    )
-    years = df['Date'].unique()
-
-    for i in range(len(years)):
-        geo_key = 'geo'+str(i+1) if i != 0 else 'geo'
-        lons = list(df[ df['Date'] == years[i] ]['Lon'])
-        lats = list(df[ df['Date'] == years[i] ]['Lat'])
-        # Walmart store data
-        data.append(
-            dict(
-                type = 'scattergeo',
-                showlegend=False,
-                lon = lons,
-                lat = lats,
-                geo = geo_key,
-                name = int(years[i]),
-                marker = dict(
-                    color = "rgb(0, 0, 255)",
-                    opacity = 0.5
-                )
+    fig = go.Figure()
+    
+    cnt = 1
+    for i in df['Date'].unique():
+        val = df.query(f'Date == "{i}"')['Value']
+        fig.add_trace(
+            go.Scatter(
+                visible=False,
+                x=cat, # assign x as the dataframe column 'x'
+                y=val,
+                name = i,
+                mode='lines'
             )
         )
-        # Year markers
-        data.append(
-            dict(
-                type = 'scattergeo',
-                showlegend = False,
-                lon = [-78],
-                lat = [47],
-                geo = geo_key,
-                text = [years[i]],
-                mode = 'text',
-            )
-        )
-        layout[geo_key] = dict(
-            scope = 'usa',
-            showland = True,
-            landcolor = 'rgb(229, 229, 229)',
-            showcountries = False,
-            domain = dict( x = [], y = [] ),
-            subunitcolor = "rgb(255, 255, 255)",
-        )
+        if cnt == len(df['Date'].unique()):
+            fig.data[cnt-1].visible = True
+        else:
+            cnt += 1
 
-
-    def draw_sparkline( domain, lataxis, lonaxis ):
-        ''' Returns a sparkline layout object for geo coordinates  '''
-        return dict(
-            showland = False,
-            showframe = False,
-            showcountries = False,
-            showcoastlines = False,
-            domain = domain,
-            lataxis = lataxis,
-            lonaxis = lonaxis,
-            bgcolor = 'rgba(255,200,200,0.0)'
+    steps = []
+    for i in range(len(fig.data)):
+        step = dict(
+            method="restyle",
+            args=["visible", [False] * len(fig.data)],
+            label=fig.data[i]['name']
         )
-
-    # Stores per year sparkline
-    layout['geo44'] = draw_sparkline({'x':[0.6,0.8], 'y':[0,0.15]}, \
-                                    {'range':[-5.0, 30.0]}, {'range':[0.0, 40.0]} )
-    data.append(
-        dict(
-            type = 'scattergeo',
-            mode = 'lines',
-            lat = list(df.groupby(by=['Date']).count()['Category']/1e1),
-            lon = list(range(len(df.groupby(by=['Date']).count()['Category']/1e1))),
-            line = dict( color = "rgb(0, 0, 255)" ),
-            name = "New stores per year<br>Peak of 178 stores per year in 1990",
-            geo = 'geo44',
-        )
+        step["args"][1][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+    
+    sliders = [dict(
+        active=10,
+        currentvalue={"prefix": "Year: "},
+        pad={"t": 50},
+        steps=steps
+    )]
+    
+    fig.update_layout(
+        sliders=sliders
     )
 
-    # Cumulative sum sparkline
-    layout['geo45'] = draw_sparkline({'x':[0.8,1], 'y':[0,0.15]}, \
-                                    {'range':[-5.0, 50.0]}, {'range':[0.0, 50.0]} )
-    data.append(
-        dict(
-            type = 'scattergeo',
-            mode = 'lines',
-            lat = list(df.groupby(by=['Date']).count().cumsum()['Category']/1e2),
-            lon = list(range(len(df.groupby(by=['Date']).count()['Category']/1e1))),
-            line = dict( color = "rgb(214, 39, 40)" ),
-            name ="Cumulative sum<br>3176 stores total in 2006",
-            geo = 'geo45',
-        )
-    )
-
-    z = 0
-    COLS = 4
-    ROWS = 2
-    for y in reversed(range(ROWS)):
-        for x in range(COLS):
-            geo_key = 'geo'+str(z+1) if z != 0 else 'geo'
-            layout[geo_key]['domain']['x'] = [float(x)/float(COLS), float(x+1)/float(COLS)]
-            layout[geo_key]['domain']['y'] = [float(y)/float(ROWS), float(y+1)/float(ROWS)]
-            z=z+1
-            if z > 42:
-                break
-
-    fig = go.Figure(data=data, layout=layout)
-    fig.update_layout(width=800)
-    fig.update_layout(title="Mortality by State Over Time")
-
+    fig.update_yaxes(range=[0, ymax])
+    
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #print(graphJSON)
     return graphJSON
     #fig.show()    
-
 
 
 
